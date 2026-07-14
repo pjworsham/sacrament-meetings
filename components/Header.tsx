@@ -1,4 +1,4 @@
-// import NavLinks from './NavLinks';
+import NavLinks from './NavLinks';
 
 export default function Header() {
   const currentDate = new Date().toLocaleDateString("en-US", {
@@ -16,9 +16,9 @@ export default function Header() {
         </h1>
         <p className="text-sm">{currentDate}</p>
       </div>
-      {/* <nav className="max-w-4xl mx-auto px-4 flex justify-between items-center">
+      <nav className="max-w-4xl mx-auto px-4 flex justify-between items-center">
         <NavLinks />
-      </nav> */}
+      </nav>
     </header>
   );
 }
