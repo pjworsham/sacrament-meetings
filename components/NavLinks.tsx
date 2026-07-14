@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 const links = [
   { href: "/", label: "Home" },
   { href: "/meetings", label: "Meetings" },
-  { href: "/components/MeetingCard.tsx", label: "Meeting Detail" },
+  { href: "/meetings/current", label: "Current Program" },
 ];
 
 export default function NavLinks() {
@@ -24,8 +24,8 @@ export default function NavLinks() {
                 href={link.href}
                 className={`font-medium transition-colors ${
                   isActive
-                    ? "text-white hover:text-black"
-                    : "text-white hover:text-black"
+                    ? "text-white-600 hover:text-gray-600"
+                    : "text-wwhite-700 hover:text-gray-600"
                 }`}
               >
                 {link.label}
