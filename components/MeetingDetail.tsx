@@ -76,23 +76,30 @@ export default function MeetingDetail({ meeting }: MeetingDetailProps) {
       </section>
 
       <section>
-        <h2 className="text-xl font-semibold mb-2">Speakers & Musical Numbers</h2>
+        <h2 className="text-xl font-semibold mb-2">Speakers</h2>
 
-        <ul className="space-y-2">
-          {meeting.speakers.map((speaker, index) => (
-            <li key={index} className="border rounded p-3">
+        <ul className="list-disc list-inside">
+          {meeting.speakers
+            .filter((item) => item.type === "speaker")
+            .map((speaker, index) => (
+              <li key={index}>
+                <strong>{speaker.name}</strong> — {speaker.topic}
+              </li>
+            ))}
+        </ul>
+      </section>
 
-              <p>
-                <strong>{speaker.name}</strong>
-              </p>
+      <section>
+        <h2 className="text-xl font-semibold mb-2">Musical Numbers</h2>
 
-              <p>Type: {speaker.type}</p>
-
-              {speaker.topic && (
-                <p>Topic: {speaker.topic}</p>
-              )}
-            </li>
-          ))}
+        <ul className="list-disc list-inside">
+          {meeting.speakers
+            .filter((item) => item.type === "musical-number")
+            .map((item, index) => (
+              <li key={index}>
+                {item.name}
+              </li>
+            ))}
         </ul>
       </section>
 

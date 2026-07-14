@@ -5,35 +5,55 @@ interface MeetingCardProps {
   meeting: SacramentMeeting;
 }
 
+const meetingTypeLabels = {
+  regular: "Regular Sacrament Meeting",
+  testimony: "Fast & Testimony Meeting",
+  stake: "Stake Conference",
+  general: "General Conference",
+};
+
 export default function MeetingCard({ meeting }: MeetingCardProps) {
+  const formattedDate = new Date(meeting.date).toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+
+  const isSacramentMeeting =
+    meeting.meetingType === "regular" ||
+    meeting.meetingType === "testimony";
+
   return (
-    <article className="p-4 border-l-4 border-blue-600 bg-gray-50 rounded">
-      <h3 className="text-xl font-bold">
-        {meeting.date}
-      </h3>
+    <article className="rounded-lg border border-gray-200 bg-white p-6 shadow-md">
+      <h2 className="text-2xl font-bold text-blue-700">
+        {meetingTypeLabels[meeting.meetingType]}
+      </h2>
 
-      <p className="text-gray-700">
-        <strong>Meeting Type:</strong> {meeting.meetingType}
-      </p>
+      <p className="mt-1 text-gray-600">{formattedDate}</p>
 
-      <p className="text-gray-700">
-        <strong>Conducting:</strong> {meeting.conducting}
-      </p>
+      <div className="mt-4 space-y-2">
+        <p>
+          <strong>Presiding:</strong> {meeting.presiding}
+        </p>
 
-      <p className="text-gray-700">
-        <strong>Presiding:</strong> {meeting.presiding}
-      </p>
+        <p>
+          <strong>Conducting:</strong> {meeting.conducting}
+        </p>
 
-      <p className="text-gray-700">
-        <strong>Sacrament Hymn:</strong> #{meeting.sacramentHymn.number}{" "}
-        {meeting.sacramentHymn.title}
-      </p>
+        {isSacramentMeeting && (
+          <p>
+            <strong>Sacrament Hymn:</strong>{" "}
+            #{meeting.sacramentHymn.number} {meeting.sacramentHymn.title}
+          </p>
+        )}
+      </div>
 
       <Link
         href={`/meetings/${meeting.id}`}
-        className="mt-3 inline-block text-blue-600 hover:underline"
+        className="mt-6 inline-block rounded bg-blue-600 px-4 py-2 text-white transition hover:bg-blue-700"
       >
-        View Meeting Details
+        Open Program
       </Link>
     </article>
   );
