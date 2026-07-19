@@ -19,6 +19,7 @@ export default function MeetingDetail({ meeting }: MeetingDetailProps) {
             month: "long",
             day: "numeric",
             year: "numeric",
+            timeZone: "UTC"
           })}
         </p>
 
