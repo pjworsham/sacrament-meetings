@@ -1,6 +1,6 @@
 import { getMeetings, getMeetingsTotalPages } from '@/lib/meetings-db';
 import { MeetingSearch } from '@/components/MeetingSearch';
-import { MeetingCard } from '@/components/MeetingCard';
+import  MeetingCard  from '@/components/MeetingCard';
 import { Pagination } from '@/components/Pagination';
 
 export default async function MeetingsPage(props: {
