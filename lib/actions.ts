@@ -133,10 +133,7 @@ export async function createMeeting(
     await addMeetingToDatabase(validatedFields.data);
   } catch (error) {
     console.error('Failed to create meeting:', error);
-
-    return {
-      message: 'Database Error: Failed to create meeting.',
-    };
+    throw new Error('Unable to create the meeting. Please try again.');
   }
 
   revalidatePath('/meetings');
@@ -172,10 +169,7 @@ export async function updateMeeting(
     }
   } catch (error) {
     console.error('Failed to update meeting:', error);
-
-    return {
-      message: 'Database Error: Failed to update meeting.',
-    };
+    throw new Error('Unable to update the meeting. Please try again.');
   }
 
   revalidatePath('/meetings');
