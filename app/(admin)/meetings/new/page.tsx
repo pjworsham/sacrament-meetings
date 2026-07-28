@@ -1,8 +1,11 @@
-export default function EditMeetingPage() {
+
+import MeetingForm from '@/components/MeetingForm';
+
+export default function NewMeetingPage() {
   return (
-    <div>
+    <main>
       <h1>Create Meeting</h1>
-      <p>Coming in Week 04</p>
-    </div>
+      <MeetingForm />
+    </main>
   );
 }

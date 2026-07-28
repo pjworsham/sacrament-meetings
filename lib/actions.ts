@@ -1,68 +1,126 @@
 'use server';
 
 import { z } from 'zod';
-import { sql } from '@vercel/postgres';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import {
+  addMeeting as addMeetingToDatabase,
+  updateMeeting as updateMeetingInDatabase,
+  deleteMeeting as deleteMeetingFromDatabase,
+} from './meetings-db';
 
-const hymnSchema = z.object ({
-    number: z.number(),
-    title: z.string(),
+const hymnSchema = z.object({
+  number: z.coerce.number().int().positive('Enter a valid hymn number.'),
+  title: z.string().min(1, 'Enter the hymn title.'),
 });
 
-const CreateMeetingSchema = z.object({
-    date: z.string().min(1),
-    meetingType: z.string(),
-    presiding: z.string(),
-    conducting: z.string(),
-    announcements: z.string(),
-    openingHymn: hymnSchema,
-    openingPrayer: z.string(),
-    wardBusiness: z.string(),
-    stakeBusiness: z.boolean(),   
-    sacramentHymn: hymnSchema,
-    speakers: z.string(),
-    closingHymn: hymnSchema,
-    closingPrayer: z.string(),   
+const wardBusinessSchema = z.object({
+  description: z
+    .string()
+    .trim()
+    .min(1, 'Enter the ward business description.'),
+});
+
+const speakerSchema = z.object({
+  name: z.string().trim().min(1, 'Enter the speaker name.'),
+  topic: z.string().trim().min(1, 'Enter the speaker topic.'),
+  type: z.enum(['speaker', 'musical-number']),
+});
+
+const MeetingFormSchema = z.object({
+  date: z.string().min(1, 'Select a date.'),
+
+  meetingType: z.enum([
+    'testimony',
+    'regular',
+    'stake',
+    'general',
+  ]),
+
+  presiding: z.string().trim().min(1, 'Enter who is presiding.'),
+  conducting: z.string().trim().min(1, 'Enter who is conducting.'),
+
+  announcements: z.array(z.string()),
+
+  openingHymn: hymnSchema,
+  openingPrayer: z.string().trim().min(1, 'Enter the opening prayer.'),
+
+  wardBusiness: z.array(wardBusinessSchema),
+  stakeBusiness: z.boolean(),
+
+  sacramentHymn: hymnSchema,
+
+  speakers: z.array(speakerSchema),
+
+  closingHymn: hymnSchema,
+  closingPrayer: z.string().trim().min(1, 'Enter the closing prayer.'),
 });
 
 export type State = {
-  errors?: {
-    date?: string[];
-    meeting_type?: string[];
-    presiding?: string[];
-    conducting?: string[];
-    announcements?: string[];
-    openingHymn?: string[];
-    openingPrayer?: string[];
-    wardBusiness?: string[];
-    stakeBusiness?: string[];  
-    sacramentHymn?: string[];
-    speakers?: string[];
-    closingHymn?: string[];
-    closingPrayer?: string[];
-    yearCompleted?: string[];
-  };
+  errors?: Record<string, string[] | undefined>;
   message?: string | null;
 };
 
-export async function createMeeting(_prevState: State, formData: FormData): Promise<State> {
-  const validatedFields = CreateMeetingSchema.safeParse({
+function getMeetingFormValues(formData: FormData) {
+  const announcements =
+    String(formData.get('announcements') ?? '')
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean);
+
+  return {
     date: formData.get('date'),
-    meeting_type: formData.get('meeting_type'),
+    meetingType: formData.get('meeting_type'),
+
     presiding: formData.get('presiding'),
     conducting: formData.get('conducting'),
-    announcements: formData.get('announcements'),
-    openingHymn: formData.get('openingHymn'),
+
+    announcements,
+
+    openingHymn: {
+      number: formData.get('openingHymnNumber'),
+      title: formData.get('openingHymnTitle'),
+    },
+
     openingPrayer: formData.get('openingPrayer'),
-    wardBusiness: formData.get('wardBusiness'),
-    stakeBusiness: formData.get('stakeBusiness'),   
-    sacramentHymn: formData.get('sacramentHymn'),
-    speakers: formData.get('speakers'),
-    closingHymn: formData.get('closingHymn'),
+
+    wardBusiness: [
+      {
+        description: String(formData.get('wardBusiness') ?? ''),
+      },
+    ],
+
+    stakeBusiness: formData.get('stakeBusiness') === 'on',
+
+    sacramentHymn: {
+      number: formData.get('sacramentHymnNumber'),
+      title: formData.get('sacramentHymnTitle'),
+    },
+
+    speakers: [
+      {
+        name: String(formData.get('speakerName') ?? ''),
+        topic: String(formData.get('speakerTopic') ?? ''),
+        type: formData.get('speakerType'),
+      },
+    ],
+
+    closingHymn: {
+      number: formData.get('closingHymnNumber'),
+      title: formData.get('closingHymnTitle'),
+    },
+
     closingPrayer: formData.get('closingPrayer'),
-    yearCompleted: formData.get('yearCompleted'),
-  });
+  };
+}
+
+export async function createMeeting(
+  _prevState: State,
+  formData: FormData
+): Promise<State> {
+  const validatedFields = MeetingFormSchema.safeParse(
+    getMeetingFormValues(formData)
+  );
 
   if (!validatedFields.success) {
     return {
@@ -71,136 +129,68 @@ export async function createMeeting(_prevState: State, formData: FormData): Prom
     };
   }
 
-  const {     
-    date, 
-    meetingType, 
-    presiding,
-    conducting,
-    announcements,
-    openingHymn,
-    openingPrayer,
-    wardBusiness,
-    stakeBusiness,  
-    sacramentHymn,
-    speakers,
-    closingHymn,
-    closingPrayer,
-     } = validatedFields.data;
-
   try {
-    await sql`
-      INSERT INTO meetings (
-        date, 
-        meeting_type, 
-        presiding,
-        conducting,
-        announcements,
-        opening_hymn,
-        opening_prayer,
-        ward_business,
-        stake_business,  
-        sacrament_hymn,
-        speakers,
-        closing_hymn,
-        closing_prayer
-      )
-      VALUES (
-        ${date}, 
-        ${meetingType}, 
-        ${presiding}, 
-        ${conducting},
-        ${announcements},
-        ${JSON.stringify(openingHymn)},
-        ${openingPrayer},
-        ${wardBusiness},
-        ${stakeBusiness},  
-        ${JSON.stringify(sacramentHymn)},
-        ${speakers},
-        ${JSON.stringify(closingHymn)},
-        ${closingPrayer}
-      )
-    `;
-  } catch {
+    await addMeetingToDatabase(validatedFields.data);
+  } catch (error) {
+    console.error('Failed to create meeting:', error);
+
     return {
       message: 'Database Error: Failed to create meeting.',
     };
   }
+
   revalidatePath('/meetings');
   redirect('/meetings');
 }
 
-export async function updateMeeting(id: string, formData: FormData) {
-  const validatedFields = CreateMeetingSchema.safeParse({
-    date: formData.get('date'),
-    meeting_type: formData.get('meeting_type'),
-    presiding: formData.get('presiding'),
-    conducting: formData.get('conducting'),
-    announcements: formData.get('announcements'),
-    openingHymn: formData.get('openingHymn'),
-    openingPrayer: formData.get('openingPrayer'),
-    wardBusiness: formData.get('wardBusiness'),
-    stakeBusiness: formData.get('stakeBusiness'),   
-    sacramentHymn: formData.get('sacramentHymn'),
-    speakers: formData.get('speakers'),
-    closingHymn: formData.get('closingHymn'),
-    closingPrayer: formData.get('closingPrayer'),
-    yearCompleted: formData.get('yearCompleted'),
-  });
+export async function updateMeeting(
+  id: number,
+  _prevState: State,
+  formData: FormData
+): Promise<State> {
+  const validatedFields = MeetingFormSchema.safeParse(
+    getMeetingFormValues(formData)
+  );
 
   if (!validatedFields.success) {
-    throw new Error('Invalid meeting input.');
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+      message: 'Missing or invalid fields. Failed to update meeting.',
+    };
   }
 
-  const {
-    date,
-    meetingType,
-    presiding,
-    conducting,
-    announcements,
-    openingHymn,
-    openingPrayer,
-    wardBusiness,
-    stakeBusiness,   
-    sacramentHymn,
-    speakers,
-    closingHymn,
-    closingPrayer,
-  } = validatedFields.data;
-
   try {
-    await sql`
-        UPDATE meetings
-        SET
-            date = ${date},
-            meeting_type = ${meetingType},
-            presiding = ${presiding},
-            conducting = ${conducting},
-            announcements = ${announcements},
-            opening_hymn = ${JSON.stringify(openingHymn)},
-            opening_prayer = ${openingPrayer},
-            ward_business = ${wardBusiness},
-            stake_business = ${stakeBusiness},
-            sacrament_hymn =  ${JSON.stringify(sacramentHymn)},
-            speakers = ${speakers},
-            closing_hymn = ${JSON.stringify(closingHymn)},
-            closing_prayer = ${closingPrayer},
-        WHERE id = ${id}
-        `;
+    const updatedMeeting = await updateMeetingInDatabase(
+      id,
+      validatedFields.data
+    );
+
+    if (!updatedMeeting) {
+      return {
+        message: 'Meeting not found.',
+      };
+    }
   } catch (error) {
     console.error('Failed to update meeting:', error);
-    throw new Error('Database Error: Failed to update meeting.');
+
+    return {
+      message: 'Database Error: Failed to update meeting.',
+    };
   }
 
   revalidatePath('/meetings');
+  revalidatePath(`/meetings/${id}`);
   redirect('/meetings');
 }
 
-export async function deleteMeeting(id: number) {
+export async function deleteMeeting(id: number): Promise<void> {
   try {
-    await sql`
-      DELETE FROM meetings
-      WHERE id = ${id}
-    `;
+    const meetingWasDeleted =
+      await deleteMeetingFromDatabase(id);
+
+    if (!meetingWasDeleted) {
+      throw new Error('Meeting not found.');
+    }
   } catch (error) {
     console.error('Failed to delete meeting:', error);
     throw new Error('Database Error: Failed to delete meeting.');
