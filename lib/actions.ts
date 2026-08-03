@@ -8,6 +8,56 @@ import {
   updateMeeting as updateMeetingInDatabase,
   deleteMeeting as deleteMeetingFromDatabase,
 } from './meetings-db';
+import { sql } from '@vercel/postgres';
+import bcrypt from 'bcryptjs';
+import { signIn, auth } from '@/auth';
+import { AuthError } from 'next-auth';
+
+export async function createUser(
+  prevState: string | undefined,
+  formData: FormData
+) {
+  
+  const name = formData.get("name")?.toString().trim();
+  const email = formData.get("email")?.toString().trim();
+  const password = formData.get("password")?.toString();
+
+  if (!name || !email || !password) {
+    return "All fields are required.";
+  }
+
+  // Check for an existing user
+  const existing = await sql`
+    SELECT id
+    FROM users
+    WHERE email = ${email}
+  `;
+
+  if (existing.rows.length > 0) {
+    return "An account with this email already exists.";
+  }
+
+  // Hash the password
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  // Save the new user
+  await sql`
+    INSERT INTO users (name, email, password_hash)
+    VALUES (
+      ${name},
+      ${email},
+      ${hashedPassword}
+    )
+  `;
+
+  return "Account created successfully.";
+}
+
+async function requireOwnerSession() {
+  const session = await auth();
+  if (!session?.user) throw new Error('Not authenticated');
+  return session;
+}
 
 const hymnSchema = z.object({
   number: z.coerce.number().int().positive('Enter a valid hymn number.'),
@@ -118,6 +168,7 @@ export async function createMeeting(
   _prevState: State,
   formData: FormData
 ): Promise<State> {
+    await requireOwnerSession();
   const validatedFields = MeetingFormSchema.safeParse(
     getMeetingFormValues(formData)
   );
@@ -145,6 +196,7 @@ export async function updateMeeting(
   _prevState: State,
   formData: FormData
 ): Promise<State> {
+    await requireOwnerSession();
   const validatedFields = MeetingFormSchema.safeParse(
     getMeetingFormValues(formData)
   );
@@ -192,4 +244,23 @@ export async function deleteMeeting(id: number): Promise<void> {
 
   revalidatePath('/meetings');
   redirect('/meetings');
+}
+
+export async function authenticate(
+  prevState: string | undefined,
+  formData: FormData,
+) {
+  try {
+    await signIn('credentials', formData);
+  } catch (error) {
+    if (error instanceof AuthError) {
+      switch (error.type) {
+        case 'CredentialsSignin':
+          return 'Invalid email or password.';
+        default:
+          return 'Something went wrong.';
+      }
+    }
+    throw error; // re-throw so Next.js handles redirects correctly
+  }
 }
