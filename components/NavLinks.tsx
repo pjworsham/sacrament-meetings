@@ -24,8 +24,8 @@ export default function NavLinks() {
                 href={link.href}
                 className={`font-medium transition-colors ${
                   isActive
-                    ? "text-white-600 hover:text-gray-600"
-                    : "text-wwhite-700 hover:text-gray-600"
+                    ? "text-white hover:text-gray-600"
+                    : "text-white hover:text-gray-600"
                 }`}
               >
                 {link.label}
@@ -37,3 +37,5 @@ export default function NavLinks() {
     </nav>
   );
 }
+
+

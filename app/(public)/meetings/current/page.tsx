@@ -7,8 +7,11 @@ export default async function CurrentPage() {
   const today = new Date();
   const dayOfWeek = today.getUTCDay();
 
+  // Calculate the upcoming Sunday.
+  const daysUntilSunday = (7 - dayOfWeek) % 7;
+
   const sunday = new Date(today);
-  sunday.setUTCDate(today.getUTCDate() - dayOfWeek);
+  sunday.setUTCDate(today.getUTCDate() + daysUntilSunday);
 
   const sundayDate = sunday.toISOString().split("T")[0];
 

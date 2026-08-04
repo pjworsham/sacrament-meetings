@@ -1,4 +1,3 @@
-import './globals.css';
 
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
@@ -19,10 +18,10 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: 'Pam Worsham \ Meeting Planner',
+    default: 'Pam Worsham | Meeting Planner',
     template: '%s | Meeting Planner',
   },
-  description: "Sunday Meeting.",
+  description: "View current and upcoming Canton Ward sacrament meeting programs.",
   metadataBase: new URL('https://sacrament-meetings-q6kw-coral.vercel.app/'),
 };
 

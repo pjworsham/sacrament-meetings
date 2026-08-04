@@ -120,7 +120,7 @@ export default function MeetingDetail({ meeting }: MeetingDetailProps) {
       <section>
         <h2 className="text-xl font-semibold mb-2">Announcements</h2>
 
-        {meeting.announcements?.length ?? 0> 0 ? (
+        {(meeting.announcements?.length ?? 0) > 0 ? (
           <ul className="list-disc list-inside">
             {meeting.announcements?.map((announcement, index) => (
               <li key={index}>{announcement}</li>

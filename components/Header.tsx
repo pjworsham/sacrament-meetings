@@ -1,4 +1,5 @@
 import NavLinks from './NavLinks';
+import { SignOutButton } from "./sign-out-button";
 
 export default function Header() {
   const currentDate = new Date().toLocaleDateString("en-US", {
@@ -18,6 +19,7 @@ export default function Header() {
       </div>
       <nav className="max-w-4xl mx-auto px-4 flex justify-between items-center">
         <NavLinks />
+        <SignOutButton />
       </nav>
     </header>
   );
